@@ -32,7 +32,7 @@ func init() {
 	_location, _ = time.LoadLocation(DefaultLocation)
 
 	re0 = regexp.MustCompile(`((\d{2,})\s*[년年])?\s*((\d{1,2})\s*[월月])?\s*(\d{1,2})\s*[일日]`)
-	re1 = regexp.MustCompile(`((\d{2,})\s*[\-\./])?\s*((\d{1,2})\s*[\-\./])?\s*(\d{1,2})`)
+	re1 = regexp.MustCompile(`((\d{2,})\s*[\-\./])?\s*((\d{1,2})\s*[\-\./]\s*(\d{1,2}))`)
 	re2 = regexp.MustCompile(fmt.Sprintf(`(%s)`, strings.Join([]string{
 		ExpressionTheDayBeforeYesterday1,
 		ExpressionTheDayBeforeYesterday2,

@@ -23,6 +23,8 @@ func TestExtractTime(t *testing.T) {
 		`5시 01분 <= 앞에 0이 padding 되어 있거나 말거나 잘 나와야 합니다`,
 		`어제 오후 01시 01분 <= 오후일 때에는 12시간을 더해줘야 합니다`,
 		`PM 03:30 <= '오전/오후' 말고 'am/pm'도 잘 구분해야 합니다`,
+		`1시간 전이면 몇 시일까요?  <= 현재 시각 기준에서 -1시간`,
+		`5분 뒤 알려줄래? <= 현재 시각 기준 +5분`,
 	} {
 		if _, _, _, err := ExtractTime(str, false); err != nil {
 			t.Error("ExtractTime failed with: " + str)

@@ -52,11 +52,28 @@ func main() {
 		fmt.Printf("Extracted date: %v\n", date)
 	}
 
-	// 내일, 모레 등의 keyword의 경우 기준 시간에 해당 일자만큼 +/- 처리
+	// 내일, 모레 등의 keyword의 경우, 기준 시간에 해당 일자만큼 +/- 처리
 	if date, err := lkdp.ExtractDate("모레 할 일을 글피로 미루자", true); err != nil {
 		fmt.Printf("Error: %s\n", err)
 	} else {
 		fmt.Printf("Extracted date: %v\n", date)
+	}
+
+	// 1시간 전, 5분 뒤, 30초 후 등의 keyword의 경우, 기준 시간에 해당 시간만큼 +/- 처리
+	if h, m, s, err := lkdp.ExtractTime("1시간 뒤에 알려주련?", true); err != nil {
+		fmt.Printf("Error: %s\n", err)
+	} else {
+		fmt.Printf("Extracted time: %02d:%02d:%02d\n", h, m, s)
+	}
+	if h, m, s, err := lkdp.ExtractTime("기상 5분 전", true); err != nil {
+		fmt.Printf("Error: %s\n", err)
+	} else {
+		fmt.Printf("Extracted time: %02d:%02d:%02d\n", h, m, s)
+	}
+	if h, m, s, err := lkdp.ExtractTime("30초 후 폭발하도록 되어 있다", true); err != nil {
+		fmt.Printf("Error: %s\n", err)
+	} else {
+		fmt.Printf("Extracted time: %02d:%02d:%02d\n", h, m, s)
 	}
 
 	// param2 = false인 경우 빈 값은 0으로 설정
@@ -94,10 +111,13 @@ func main() {
 Extracted date: 0000-05-18 00:00:00 +0827 LMT
 Extracted date: 2016-05-18 00:00:00 +0900 KST
 Extracted date: 1950-06-25 00:00:00 +0900 KST
-Extracted date: 2016-11-12 00:00:00 +0900 KST
+Extracted date: 2016-11-16 00:00:00 +0900 KST
+Extracted time: 23:53:10
+Extracted time: 22:48:10
+Extracted time: 22:53:40
 Extracted time: 13:30:00
 Extracted time: 12:00:00
-Extracted time: 19:12:42
+Extracted time: 19:12:10
 Extracted time: 18:09:35
 ```
 

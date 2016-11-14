@@ -23,17 +23,59 @@ const (
 	ExpressionTomorrow2              = `명일`
 	ExpressionTheDayAfterTomorrow1   = `모레`
 	ExpressionTwoDaysAfterTomorrow1  = `글피`
+
+	ExpressionYear1  = `년`
+	ExpressionYear2  = `年`
+	ExpressionMonth1 = `월`
+	ExpressionMonth2 = `月`
+	ExpressionDay1   = `일`
+	ExpressionDay2   = `日`
+
+	ExpressionPeriodAm1 = `오전`
+	ExpressionPeriodAm2 = `AM`
+	ExpressionPeriodPm1 = `오후`
+	ExpressionPeriodPm2 = `PM`
+
+	ExpressionHour1   = `시`
+	ExpressionHour2   = `時`
+	ExpressionHour3   = `:`
+	ExpressionMinute1 = `분`
+	ExpressionMinute2 = `分`
+	ExpressionMinute3 = `:`
+	ExpressionSecond1 = `초`
+	ExpressionSecond2 = `秒`
+
+	ExpressionTimeHour1   = `시간`
+	ExpressionTimeMinute1 = ExpressionMinute1
+	ExpressionTimeSecond1 = ExpressionSecond1
+
+	ExpressionBefore1 = `전`
+	ExpressionAfter1  = `후`
+	ExpressionAfter2  = `뒤`
 )
 
 var _location *time.Location
-var re0, re1, re2, re3 *regexp.Regexp
+var dateRe1, dateRe2, dateRe3, timeRe1, timeRe2 *regexp.Regexp
 
 func init() {
 	_location, _ = time.LoadLocation(DefaultLocation)
 
-	re0 = regexp.MustCompile(`((\d{2,})\s*[년年])?\s*((\d{1,2})\s*[월月])?\s*(\d{1,2})\s*[일日]`)
-	re1 = regexp.MustCompile(`((\d{2,})\s*[\-\./])?\s*((\d{1,2})\s*[\-\./]\s*(\d{1,2}))`)
-	re2 = regexp.MustCompile(fmt.Sprintf(`(%s)`, strings.Join([]string{
+	dateRe1 = regexp.MustCompile(fmt.Sprintf(`((\d{2,})\s*[%s])?\s*((\d{1,2})\s*[%s])?\s*(\d{1,2})\s*[%s]`,
+		strings.Join([]string{
+			ExpressionYear1,
+			ExpressionYear2,
+		}, ""),
+		strings.Join([]string{
+			ExpressionMonth1,
+			ExpressionMonth2,
+		}, ""),
+		strings.Join([]string{
+			ExpressionDay1,
+			ExpressionDay2,
+		}, ""),
+	))
+	dateRe2 = regexp.MustCompile(`((\d{2,})\s*[\-\./])?\s*((\d{1,2})\s*[\-\./]\s*(\d{1,2}))`)
+	dateRe3 = regexp.MustCompile(fmt.Sprintf(`(%s)`, strings.Join([]string{
 		ExpressionTheDayBeforeYesterday1,
 		ExpressionTheDayBeforeYesterday2,
 		ExpressionYesterday1,
@@ -44,7 +86,40 @@ func init() {
 		ExpressionTheDayAfterTomorrow1,
 		ExpressionTwoDaysAfterTomorrow1,
 	}, "|")))
-	re3 = regexp.MustCompile(`(?i)(오전|오후|AM|PM)?\s*((\d{1,2})\s*[시時:])\s*((\d{1,2})(\s*[분分:]?(\d{1,2})\s*[초]?)?)?`)
+	timeRe1 = regexp.MustCompile(fmt.Sprintf(`(\d+)\s*(%s)\s*(%s)`,
+		strings.Join([]string{
+			ExpressionTimeHour1,
+			ExpressionTimeMinute1,
+			ExpressionTimeSecond1,
+		}, "|"),
+		strings.Join([]string{
+			ExpressionBefore1,
+			ExpressionAfter1,
+			ExpressionAfter2,
+		}, "|"),
+	))
+	timeRe2 = regexp.MustCompile(fmt.Sprintf(`(?i)(%s)?\s*((\d{1,2})\s*[%s])\s*((\d{1,2})(\s*[%s]?(\d{1,2})\s*[%s]?)?)?`,
+		strings.Join([]string{
+			ExpressionPeriodAm1,
+			ExpressionPeriodAm2,
+			ExpressionPeriodPm1,
+			ExpressionPeriodPm2,
+		}, "|"),
+		strings.Join([]string{
+			ExpressionHour1,
+			ExpressionHour2,
+			ExpressionHour3,
+		}, "|"),
+		strings.Join([]string{
+			ExpressionMinute1,
+			ExpressionMinute2,
+			ExpressionMinute3,
+		}, "|"),
+		strings.Join([]string{
+			ExpressionMinute1,
+			ExpressionMinute2,
+		}, "|"),
+	))
 }
 
 // 지역 설정 (timezone)
@@ -64,22 +139,22 @@ func ExtractDate(str string, ifEmptyFillAsToday bool) (date time.Time, err error
 
 	bytes := []byte(str)
 
-	if re0.Match(bytes) {
-		slices := re0.FindStringSubmatch(str)
+	if dateRe1.Match(bytes) {
+		slices := dateRe1.FindStringSubmatch(str)
 
 		year64, _ := strconv.ParseInt(slices[2], 10, 16)
 		month64, _ := strconv.ParseInt(slices[4], 10, 16)
 		day64, _ := strconv.ParseInt(slices[5], 10, 16)
 		year, month, day = int(year64), int(month64), int(day64)
-	} else if re1.Match(bytes) {
-		slices := re1.FindStringSubmatch(str)
+	} else if dateRe2.Match(bytes) {
+		slices := dateRe2.FindStringSubmatch(str)
 
 		year64, _ := strconv.ParseInt(slices[2], 10, 16)
 		month64, _ := strconv.ParseInt(slices[4], 10, 16)
 		day64, _ := strconv.ParseInt(slices[5], 10, 16)
 		year, month, day = int(year64), int(month64), int(day64)
-	} else if re2.Match(bytes) {
-		match := re2.FindStringSubmatch(str)[0]
+	} else if dateRe3.Match(bytes) {
+		match := dateRe3.FindStringSubmatch(str)[0]
 
 		date := time.Now() // today
 
@@ -119,11 +194,39 @@ func ExtractDate(str string, ifEmptyFillAsToday bool) (date time.Time, err error
 func ExtractTime(str string, ifEmptyFillAsNow bool) (hour, min, sec int, err error) {
 	bytes := []byte(str)
 
-	if re3.Match(bytes) {
-		slices := re3.FindStringSubmatch(str)
+	var parseError error
+	if timeRe1.Match(bytes) {
+		slices := timeRe1.FindStringSubmatch(str)
+
+		when := time.Now() // now
+
+		var number int64 = 0
+		if number, parseError = strconv.ParseInt(slices[1], 10, 16); parseError != nil {
+			return 0, 0, 0, fmt.Errorf("해당하는 시간 패턴이 없습니다: %s", str)
+		}
+		var multiply int = 1
+		switch slices[3] {
+		case ExpressionBefore1:
+			multiply = -1
+		case ExpressionAfter1:
+			// do nothing (+1)
+		case ExpressionAfter2:
+			// do nothing (+1)
+		}
+		switch slices[2] {
+		case ExpressionTimeHour1:
+			when = when.Add(time.Duration(multiply) * time.Duration(number) * time.Hour)
+		case ExpressionTimeMinute1:
+			when = when.Add(time.Duration(multiply) * time.Duration(number) * time.Minute)
+		case ExpressionTimeSecond1:
+			when = when.Add(time.Duration(multiply) * time.Duration(number) * time.Second)
+		}
+
+		hour, min, sec = when.Hour(), when.Minute(), when.Second()
+	} else if timeRe2.Match(bytes) {
+		slices := timeRe2.FindStringSubmatch(str)
 
 		var hour64, minute64, second64 int64 = 0, 0, 0
-		var parseError error
 		now := time.Now()
 		if hour64, parseError = strconv.ParseInt(slices[3], 10, 16); parseError != nil && ifEmptyFillAsNow {
 			hour64 = int64(now.Hour())
@@ -136,7 +239,7 @@ func ExtractTime(str string, ifEmptyFillAsNow bool) (hour, min, sec int, err err
 		}
 
 		ampm := slices[1]
-		if strings.EqualFold(ampm, "오후") || strings.EqualFold(ampm, "PM") {
+		if strings.EqualFold(ampm, ExpressionPeriodPm1) || strings.EqualFold(ampm, ExpressionPeriodPm2) {
 			if hour64 <= 12 {
 				hour64 += 12
 			}
@@ -144,7 +247,7 @@ func ExtractTime(str string, ifEmptyFillAsNow bool) (hour, min, sec int, err err
 
 		hour, min, sec = int(hour64), int(minute64), int(second64)
 	} else {
-		return hour, min, sec, fmt.Errorf("해당하는 시간 패턴이 없습니다: %s", str)
+		return 0, 0, 0, fmt.Errorf("해당하는 시간 패턴이 없습니다: %s", str)
 	}
 
 	return hour, min, sec, nil

@@ -159,17 +159,17 @@ func ExtractDate(str string, ifEmptyFillAsToday bool) (date time.Time, err error
 		date := time.Now() // today
 
 		switch match {
-		case ExpressionTheDayBeforeYesterday1, ExpressionTheDayBeforeYesterday2:
+		case ExpressionTheDayBeforeYesterday1, ExpressionTheDayBeforeYesterday2: // 2 days before
 			date = date.AddDate(0, 0, -2)
-		case ExpressionYesterday1, ExpressionYesterday2:
+		case ExpressionYesterday1, ExpressionYesterday2: // 1 day before
 			date = date.AddDate(0, 0, -1)
-		case ExpressionToday1, ExpressionToday2:
+		case ExpressionToday1, ExpressionToday2: // today
 			// do nothing (= today)
-		case ExpressionTomorrow1, ExpressionTomorrow2:
+		case ExpressionTomorrow1, ExpressionTomorrow2: // 1 day after
 			date = date.AddDate(0, 0, 1)
-		case ExpressionTheDayAfterTomorrow1:
+		case ExpressionTheDayAfterTomorrow1: // 2 days after
 			date = date.AddDate(0, 0, 2)
-		case ExpressionTwoDaysAfterTomorrow1:
+		case ExpressionTwoDaysAfterTomorrow1: // 3 days after
 			date = date.AddDate(0, 0, 3)
 		default:
 			return date, fmt.Errorf("해당하는 날짜 표현이 없습니다: %s", str)
@@ -206,19 +206,17 @@ func ExtractTime(str string, ifEmptyFillAsNow bool) (hour, min, sec int, err err
 		}
 		var multiply int = 1
 		switch slices[3] {
-		case ExpressionBefore1:
+		case ExpressionBefore1: // before
 			multiply = -1
-		case ExpressionAfter1:
-			// do nothing (+1)
-		case ExpressionAfter2:
+		case ExpressionAfter1, ExpressionAfter2: // after
 			// do nothing (+1)
 		}
 		switch slices[2] {
-		case ExpressionTimeHour1:
+		case ExpressionTimeHour1: // hour
 			when = when.Add(time.Duration(multiply) * time.Duration(number) * time.Hour)
-		case ExpressionTimeMinute1:
+		case ExpressionTimeMinute1: // minute
 			when = when.Add(time.Duration(multiply) * time.Duration(number) * time.Minute)
-		case ExpressionTimeSecond1:
+		case ExpressionTimeSecond1: // second
 			when = when.Add(time.Duration(multiply) * time.Duration(number) * time.Second)
 		}
 

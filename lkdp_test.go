@@ -11,6 +11,9 @@ func TestExtractDate(t *testing.T) {
 		`기억하라, 기억하라, 11월 5일을.`,
 		`방영 시간: 오늘 오후 9시 30분부터`,
 		`모레까지 이 과제를 끝마치도록.`,
+		`2일 전만 해도 이런게 없었는데...`,
+		`대략 10개월 뒤면 또 크리스마스라네~`,
+		`3년 후 2020 원더키디 등장`,
 	} {
 		if _, err := ExtractDate(str, false); err != nil {
 			t.Error("ExtractDate failed with: " + str)

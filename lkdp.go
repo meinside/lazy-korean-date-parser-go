@@ -28,6 +28,7 @@ const (
 	ExpressionYear2  = `年`
 	ExpressionMonth1 = `월`
 	ExpressionMonth2 = `月`
+	ExpressionMonth3 = `개월`
 	ExpressionDay1   = `일`
 	ExpressionDay2   = `日`
 
@@ -55,12 +56,16 @@ const (
 )
 
 var _location *time.Location
-var dateRe1, dateRe2, dateRe3, timeRe1, timeRe2 *regexp.Regexp
+
+var dateExactRe1, dateExactRe2 *regexp.Regexp // 특정 일자
+var dateRelRe1, dateRelRe2 *regexp.Regexp     // 상대 일자
+var timeRelRe1 *regexp.Regexp                 // 상대 시간
+var timeExactRe1 *regexp.Regexp               // 특정 시간
 
 func init() {
 	_location, _ = time.LoadLocation(DefaultLocation)
 
-	dateRe1 = regexp.MustCompile(fmt.Sprintf(`((\d{2,})\s*[%s])?\s*((\d{1,2})\s*[%s])?\s*(\d{1,2})\s*[%s]`,
+	dateExactRe1 = regexp.MustCompile(fmt.Sprintf(`((\d{2,})\s*[%s])?\s*((\d{1,2})\s*[%s])?\s*(\d{1,2})\s*[%s]`,
 		strings.Join([]string{
 			ExpressionYear1,
 			ExpressionYear2,
@@ -74,8 +79,20 @@ func init() {
 			ExpressionDay2,
 		}, ""),
 	))
-	dateRe2 = regexp.MustCompile(`((\d{2,})\s*[\-\./])?\s*((\d{1,2})\s*[\-\./]\s*(\d{1,2}))`)
-	dateRe3 = regexp.MustCompile(fmt.Sprintf(`(%s)`, strings.Join([]string{
+	dateExactRe2 = regexp.MustCompile(`((\d{2,})\s*[\-\./])?\s*((\d{1,2})\s*[\-\./]\s*(\d{1,2}))`)
+	dateRelRe1 = regexp.MustCompile(fmt.Sprintf(`(\d+)\s*(%s)\s*(%s)`, strings.Join([]string{
+		ExpressionYear1,
+		ExpressionYear2,
+		ExpressionMonth1,
+		ExpressionMonth3,
+		ExpressionDay1,
+		ExpressionDay2,
+	}, "|"), strings.Join([]string{
+		ExpressionBefore1,
+		ExpressionAfter1,
+		ExpressionAfter2,
+	}, "|")))
+	dateRelRe2 = regexp.MustCompile(fmt.Sprintf(`(%s)`, strings.Join([]string{
 		ExpressionTheDayBeforeYesterday1,
 		ExpressionTheDayBeforeYesterday2,
 		ExpressionYesterday1,
@@ -86,7 +103,7 @@ func init() {
 		ExpressionTheDayAfterTomorrow1,
 		ExpressionTwoDaysAfterTomorrow1,
 	}, "|")))
-	timeRe1 = regexp.MustCompile(fmt.Sprintf(`(\d+)\s*(%s)\s*(%s)`,
+	timeRelRe1 = regexp.MustCompile(fmt.Sprintf(`(\d+)\s*(%s)\s*(%s)`,
 		strings.Join([]string{
 			ExpressionTimeHour1,
 			ExpressionTimeMinute1,
@@ -98,7 +115,7 @@ func init() {
 			ExpressionAfter2,
 		}, "|"),
 	))
-	timeRe2 = regexp.MustCompile(fmt.Sprintf(`(?i)(%s)?\s*((\d{1,2})\s*[%s])\s*((\d{1,2})(\s*[%s]?(\d{1,2})\s*[%s]?)?)?`,
+	timeExactRe1 = regexp.MustCompile(fmt.Sprintf(`(?i)(%s)?\s*((\d{1,2})\s*[%s])\s*((\d{1,2})(\s*[%s]?(\d{1,2})\s*[%s]?)?)?`,
 		strings.Join([]string{
 			ExpressionPeriodAm1,
 			ExpressionPeriodAm2,
@@ -139,22 +156,34 @@ func ExtractDate(str string, ifEmptyFillAsToday bool) (date time.Time, err error
 
 	bytes := []byte(str)
 
-	if dateRe1.Match(bytes) {
-		slices := dateRe1.FindStringSubmatch(str)
+	if dateRelRe1.Match(bytes) {
+		slices := dateRelRe1.FindStringSubmatch(str)
 
-		year64, _ := strconv.ParseInt(slices[2], 10, 16)
-		month64, _ := strconv.ParseInt(slices[4], 10, 16)
-		day64, _ := strconv.ParseInt(slices[5], 10, 16)
-		year, month, day = int(year64), int(month64), int(day64)
-	} else if dateRe2.Match(bytes) {
-		slices := dateRe2.FindStringSubmatch(str)
+		date := time.Now() // today
 
-		year64, _ := strconv.ParseInt(slices[2], 10, 16)
-		month64, _ := strconv.ParseInt(slices[4], 10, 16)
-		day64, _ := strconv.ParseInt(slices[5], 10, 16)
-		year, month, day = int(year64), int(month64), int(day64)
-	} else if dateRe3.Match(bytes) {
-		match := dateRe3.FindStringSubmatch(str)[0]
+		number, _ := strconv.ParseInt(slices[1], 10, 16)
+
+		var multiply int = 1
+		switch slices[3] {
+		case ExpressionBefore1: // before
+			multiply = -1
+		case ExpressionAfter1, ExpressionAfter2: // after
+			// do nothing (+1)
+		}
+		switch slices[2] {
+		case ExpressionYear1, ExpressionYear2: // year
+			date = date.AddDate(multiply*int(number), 0, 0)
+		case ExpressionMonth1, ExpressionMonth3: // month
+			date = date.AddDate(0, multiply*int(number), 0)
+		case ExpressionDay1, ExpressionDay2: // day
+			date = date.AddDate(0, 0, multiply*int(number))
+		default:
+			return date, fmt.Errorf("해당하는 날짜 표현이 없습니다: %s", str)
+		}
+
+		year, month, day = date.Year(), int(date.Month()), date.Day()
+	} else if dateRelRe2.Match(bytes) {
+		match := dateRelRe2.FindStringSubmatch(str)[0]
 
 		date := time.Now() // today
 
@@ -176,6 +205,20 @@ func ExtractDate(str string, ifEmptyFillAsToday bool) (date time.Time, err error
 		}
 
 		year, month, day = date.Year(), int(date.Month()), date.Day()
+	} else if dateExactRe1.Match(bytes) {
+		slices := dateExactRe1.FindStringSubmatch(str)
+
+		year64, _ := strconv.ParseInt(slices[2], 10, 16)
+		month64, _ := strconv.ParseInt(slices[4], 10, 16)
+		day64, _ := strconv.ParseInt(slices[5], 10, 16)
+		year, month, day = int(year64), int(month64), int(day64)
+	} else if dateExactRe2.Match(bytes) {
+		slices := dateExactRe2.FindStringSubmatch(str)
+
+		year64, _ := strconv.ParseInt(slices[2], 10, 16)
+		month64, _ := strconv.ParseInt(slices[4], 10, 16)
+		day64, _ := strconv.ParseInt(slices[5], 10, 16)
+		year, month, day = int(year64), int(month64), int(day64)
 	} else {
 		return date, fmt.Errorf("해당하는 날짜 패턴이 없습니다: %s", str)
 	}
@@ -195,8 +238,8 @@ func ExtractTime(str string, ifEmptyFillAsNow bool) (hour, min, sec int, err err
 	bytes := []byte(str)
 
 	var parseError error
-	if timeRe1.Match(bytes) {
-		slices := timeRe1.FindStringSubmatch(str)
+	if timeRelRe1.Match(bytes) {
+		slices := timeRelRe1.FindStringSubmatch(str)
 
 		when := time.Now() // now
 
@@ -221,8 +264,8 @@ func ExtractTime(str string, ifEmptyFillAsNow bool) (hour, min, sec int, err err
 		}
 
 		hour, min, sec = when.Hour(), when.Minute(), when.Second()
-	} else if timeRe2.Match(bytes) {
-		slices := timeRe2.FindStringSubmatch(str)
+	} else if timeExactRe1.Match(bytes) {
+		slices := timeExactRe1.FindStringSubmatch(str)
 
 		var hour64, minute64, second64 int64 = 0, 0, 0
 		now := time.Now()

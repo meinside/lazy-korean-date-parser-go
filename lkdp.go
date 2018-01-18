@@ -53,6 +53,8 @@ const (
 	ExpressionBefore1 = `전`
 	ExpressionAfter1  = `후`
 	ExpressionAfter2  = `뒤`
+
+	ExpressionMinuteThirty = `반` // xx시 '반' = xx시 '30분'
 )
 
 var _location *time.Location
@@ -60,7 +62,7 @@ var _location *time.Location
 var dateExactRe1, dateExactRe2 *regexp.Regexp // 특정 일자
 var dateRelRe1, dateRelRe2 *regexp.Regexp     // 상대 일자
 var timeRelRe1 *regexp.Regexp                 // 상대 시간
-var timeExactRe1 *regexp.Regexp               // 특정 시간
+var timeExactRe1, timeExactRe2 *regexp.Regexp // 특정 시간
 
 func init() {
 	_location, _ = time.LoadLocation(DefaultLocation)
@@ -115,7 +117,21 @@ func init() {
 			ExpressionAfter2,
 		}, "|"),
 	))
-	timeExactRe1 = regexp.MustCompile(fmt.Sprintf(`(?i)(%s)?\s*((\d{1,2})\s*[%s])\s*((\d{1,2})(\s*[%s]?(\d{1,2})\s*[%s]?)?)?`,
+	timeExactRe1 = regexp.MustCompile(fmt.Sprintf(`(?i)(%s)?\s*((\d{1,2})\s*[%s])\s*%s`,
+		strings.Join([]string{
+			ExpressionPeriodAm1,
+			ExpressionPeriodAm2,
+			ExpressionPeriodPm1,
+			ExpressionPeriodPm2,
+		}, "|"),
+		strings.Join([]string{
+			ExpressionHour1,
+			ExpressionHour2,
+			ExpressionHour3,
+		}, "|"),
+		ExpressionMinuteThirty,
+	))
+	timeExactRe2 = regexp.MustCompile(fmt.Sprintf(`(?i)(%s)?\s*((\d{1,2})\s*[%s])\s*((\d{1,2})(\s*[%s]?(\d{1,2})\s*[%s]?)?)?`,
 		strings.Join([]string{
 			ExpressionPeriodAm1,
 			ExpressionPeriodAm2,
@@ -266,6 +282,23 @@ func ExtractTime(str string, ifEmptyFillAsNow bool) (hour, min, sec int, err err
 		hour, min, sec = when.Hour(), when.Minute(), when.Second()
 	} else if timeExactRe1.Match(bytes) {
 		slices := timeExactRe1.FindStringSubmatch(str)
+
+		var hour64 int64 = 0
+		now := time.Now()
+		if hour64, parseError = strconv.ParseInt(slices[3], 10, 16); parseError != nil && ifEmptyFillAsNow {
+			hour64 = int64(now.Hour())
+		}
+
+		ampm := slices[1]
+		if strings.EqualFold(ampm, ExpressionPeriodPm1) || strings.EqualFold(ampm, ExpressionPeriodPm2) {
+			if hour64 <= 12 {
+				hour64 += 12
+			}
+		}
+
+		hour, min, sec = int(hour64), 30, 0
+	} else if timeExactRe2.Match(bytes) {
+		slices := timeExactRe2.FindStringSubmatch(str)
 
 		var hour64, minute64, second64 int64 = 0, 0, 0
 		now := time.Now()

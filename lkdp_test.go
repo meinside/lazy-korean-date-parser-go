@@ -28,6 +28,7 @@ func TestExtractTime(t *testing.T) {
 		`PM 03:30 <= '오전/오후' 말고 'am/pm'도 잘 구분해야 합니다`,
 		`1시간 전이면 몇 시일까요?  <= 현재 시각 기준에서 -1시간`,
 		`5분 뒤 알려줄래? <= 현재 시각 기준 +5분`,
+		`9시 반에 일어났다 <= '반' => 30분`,
 	} {
 		if _, _, _, err := ExtractTime(str, false); err != nil {
 			t.Error("ExtractTime failed with: " + str)

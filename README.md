@@ -102,6 +102,13 @@ func main() {
 	} else {
 		fmt.Printf("Extracted time: %02d:%02d:%02d\n", h, m, s)
 	}
+
+	// 시간값 뒤에 '반'이 있을 때 이를 '30분'으로 인식
+	if h, m, s, err := lkdp.ExtractTime("9시 30분까지 자리에 앉아 주시기 바랍니다", false); err != nil {
+		fmt.Printf("Error: %s\n", err)
+	} else {
+		fmt.Printf("Extracted time: %02d:%02d:%02d\n", h, m, s)
+	}
 }
 ```
 
@@ -109,16 +116,17 @@ func main() {
 
 ```
 Extracted date: 0000-05-18 00:00:00 +0827 LMT
-Extracted date: 2016-05-18 00:00:00 +0900 KST
+Extracted date: 2018-05-18 00:00:00 +0900 KST
 Extracted date: 1950-06-25 00:00:00 +0900 KST
-Extracted date: 2016-11-16 00:00:00 +0900 KST
-Extracted time: 23:53:10
-Extracted time: 22:48:10
-Extracted time: 22:53:40
+Extracted date: 2018-01-20 00:00:00 +0900 KST
+Extracted time: 13:23:02
+Extracted time: 12:18:02
+Extracted time: 12:23:32
 Extracted time: 13:30:00
 Extracted time: 12:00:00
-Extracted time: 19:12:10
+Extracted time: 19:12:02
 Extracted time: 18:09:35
+Extracted time: 09:30:00
 ```
 
 ## TODO

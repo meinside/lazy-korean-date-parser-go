@@ -52,38 +52,38 @@ func main() {
 		fmt.Printf("Extracted date: %v\n", date)
 	}
 
-	// 내일, 모레 등의 keyword의 경우, 기준 시간에 해당 일자만큼 +/- 처리
+	// '내일', '모레' 등의 keyword의 경우, 기준 시간에 해당 일자만큼 +/- 처리
 	if date, err := lkdp.ExtractDate("모레 할 일을 글피로 미루자", true); err != nil {
 		fmt.Printf("Error: %s\n", err)
 	} else {
 		fmt.Printf("Extracted date: %v\n", date)
 	}
 
-	// 1시간 전, 5분 뒤, 30초 후 등의 keyword의 경우, 기준 시간에 해당 시간만큼 +/- 처리
-	if h, m, s, err := lkdp.ExtractTime("1시간 뒤에 알려주련?", true); err != nil {
+	// '1시간 전', '5분 뒤', '30초 후' 등의 keyword의 경우, 기준 시간에 해당 시간만큼 +/- 처리
+	if h, m, s, _, err := lkdp.ExtractTime("1시간 뒤에 알려주련?", true); err != nil {
 		fmt.Printf("Error: %s\n", err)
 	} else {
 		fmt.Printf("Extracted time: %02d:%02d:%02d\n", h, m, s)
 	}
-	if h, m, s, err := lkdp.ExtractTime("기상 5분 전", true); err != nil {
+	if h, m, s, _, err := lkdp.ExtractTime("기상 5분 전", true); err != nil {
 		fmt.Printf("Error: %s\n", err)
 	} else {
 		fmt.Printf("Extracted time: %02d:%02d:%02d\n", h, m, s)
 	}
-	if h, m, s, err := lkdp.ExtractTime("30초 후 폭발하도록 되어 있다", true); err != nil {
+	if h, m, s, _, err := lkdp.ExtractTime("30초 후 폭발하도록 되어 있다", true); err != nil {
 		fmt.Printf("Error: %s\n", err)
 	} else {
 		fmt.Printf("Extracted time: %02d:%02d:%02d\n", h, m, s)
 	}
 
 	// param2 = false인 경우 빈 값은 0으로 설정
-	if h, m, s, err := lkdp.ExtractTime("수업은 오후 1시 30분에 시작합니다", false); err != nil {
+	if h, m, s, _, err := lkdp.ExtractTime("수업은 오후 1시 30분에 시작합니다", false); err != nil {
 		fmt.Printf("Error: %s\n", err)
 	} else {
 		fmt.Printf("Extracted time: %02d:%02d:%02d\n", h, m, s)
 	}
 
-	if h, m, s, err := lkdp.ExtractTime("12시에 볼까?", false); err != nil {
+	if h, m, s, _, err := lkdp.ExtractTime("12시에 볼까?", false); err != nil {
 		fmt.Printf("Error: %s\n", err)
 	} else {
 		fmt.Printf("Extracted time: %02d:%02d:%02d\n", h, m, s)
@@ -91,23 +91,30 @@ func main() {
 
 	// param2 = true인 경우 빈 값은 현재 시간값으로 채워넣음
 	// AM/PM 또는 오전/오후 구분 (오후일 경우 12시간 +)
-	if h, m, s, err := lkdp.ExtractTime("지진 발생 시각 PM 07:12 경", true); err != nil {
+	if h, m, s, _, err := lkdp.ExtractTime("지진 발생 시각 PM 07:12 경", true); err != nil {
 		fmt.Printf("Error: %s\n", err)
 	} else {
 		fmt.Printf("Extracted time: %02d:%02d:%02d\n", h, m, s)
 	}
 
-	if h, m, s, err := lkdp.ExtractTime("현재 시각: 18:09:35.211 KST", false); err != nil {
+	if h, m, s, _, err := lkdp.ExtractTime("현재 시각: 18:09:35.211 KST", false); err != nil {
 		fmt.Printf("Error: %s\n", err)
 	} else {
 		fmt.Printf("Extracted time: %02d:%02d:%02d\n", h, m, s)
 	}
 
 	// 시간값 뒤에 '반'이 있을 때 이를 '30분'으로 인식
-	if h, m, s, err := lkdp.ExtractTime("9시 30분까지 자리에 앉아 주시기 바랍니다", false); err != nil {
+	if h, m, s, _, err := lkdp.ExtractTime("9시 30분까지 자리에 앉아 주시기 바랍니다", false); err != nil {
 		fmt.Printf("Error: %s\n", err)
 	} else {
 		fmt.Printf("Extracted time: %02d:%02d:%02d\n", h, m, s)
+	}
+
+	// 시간이 +/- 됨에따라 날짜까지 변경되는 경우, 4번째 return parameter를 통해 몇 일이나 변경되었는지 확인 가능
+	if h, m, s, numDaysChanged, err := lkdp.ExtractTime("30시간 후에는 하루는 더 지나 있을 것이다", true); err != nil {
+		fmt.Printf("Error: %s\n", err)
+	} else {
+		fmt.Printf("Extracted time: %02d:%02d:%02d, number of days changed: %d\n", h, m, s, numDaysChanged)
 	}
 }
 ```
@@ -118,15 +125,16 @@ func main() {
 Extracted date: 0000-05-18 00:00:00 +0827 LMT
 Extracted date: 2018-05-18 00:00:00 +0900 KST
 Extracted date: 1950-06-25 00:00:00 +0900 KST
-Extracted date: 2018-01-20 00:00:00 +0900 KST
-Extracted time: 13:23:02
-Extracted time: 12:18:02
-Extracted time: 12:23:32
+Extracted date: 2018-03-22 00:00:00 +0900 KST
+Extracted time: 23:44:16
+Extracted time: 22:39:16
+Extracted time: 22:44:46
 Extracted time: 13:30:00
 Extracted time: 12:00:00
-Extracted time: 19:12:02
+Extracted time: 19:12:16
 Extracted time: 18:09:35
 Extracted time: 09:30:00
+Extracted time: 04:44:16, number of days changed: 2
 ```
 
 ## TODO

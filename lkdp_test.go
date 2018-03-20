@@ -30,7 +30,7 @@ func TestExtractTime(t *testing.T) {
 		`5분 뒤 알려줄래? <= 현재 시각 기준 +5분`,
 		`9시 반에 일어났다 <= '반' => 30분`,
 	} {
-		if _, _, _, err := ExtractTime(str, false); err != nil {
+		if _, _, _, _, err := ExtractTime(str, false); err != nil {
 			t.Error("ExtractTime failed with: " + str)
 		}
 	}
@@ -44,6 +44,6 @@ func BenchmarkExtractDate(b *testing.B) {
 
 func BenchmarkExtractTime(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_, _, _, _ = ExtractTime(`게임은 오후 7시 30분부터 시작했다. 아직 아내에게 혼날 정도로 오래 하진 않았다고 생각한다.`, true)
+		_, _, _, _, _ = ExtractTime(`게임은 오후 7시 30분부터 시작했다. 아직 아내에게 혼날 정도로 오래 하진 않았다고 생각한다.`, true)
 	}
 }

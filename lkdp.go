@@ -250,18 +250,18 @@ func ExtractDate(str string, ifEmptyFillAsToday bool) (date time.Time, err error
 }
 
 // 주어진 한글 string으로부터 시간 추출
-func ExtractTime(str string, ifEmptyFillAsNow bool) (hour, min, sec int, err error) {
+func ExtractTime(str string, ifEmptyFillAsNow bool) (hour, min, sec, daysChanged int, err error) {
 	bytes := []byte(str)
 
 	var parseError error
 	if timeRelRe1.Match(bytes) {
 		slices := timeRelRe1.FindStringSubmatch(str)
 
-		when := time.Now() // now
+		now := time.Now() // now
 
 		var number int64 = 0
 		if number, parseError = strconv.ParseInt(slices[1], 10, 16); parseError != nil {
-			return 0, 0, 0, fmt.Errorf("해당하는 시간 패턴이 없습니다: %s", str)
+			return 0, 0, 0, 0, fmt.Errorf("해당하는 시간 패턴이 없습니다: %s", str)
 		}
 		var multiply int = 1
 		switch slices[3] {
@@ -270,16 +270,19 @@ func ExtractTime(str string, ifEmptyFillAsNow bool) (hour, min, sec int, err err
 		case ExpressionAfter1, ExpressionAfter2: // after
 			// do nothing (+1)
 		}
+
+		var when time.Time
+
 		switch slices[2] {
 		case ExpressionTimeHour1: // hour
-			when = when.Add(time.Duration(multiply) * time.Duration(number) * time.Hour)
+			when = now.Add(time.Duration(multiply) * time.Duration(number) * time.Hour)
 		case ExpressionTimeMinute1: // minute
-			when = when.Add(time.Duration(multiply) * time.Duration(number) * time.Minute)
+			when = now.Add(time.Duration(multiply) * time.Duration(number) * time.Minute)
 		case ExpressionTimeSecond1: // second
-			when = when.Add(time.Duration(multiply) * time.Duration(number) * time.Second)
+			when = now.Add(time.Duration(multiply) * time.Duration(number) * time.Second)
 		}
 
-		hour, min, sec = when.Hour(), when.Minute(), when.Second()
+		hour, min, sec, daysChanged = when.Hour(), when.Minute(), when.Second(), when.Day()-now.Day()
 	} else if timeExactRe1.Match(bytes) {
 		slices := timeExactRe1.FindStringSubmatch(str)
 
@@ -296,7 +299,7 @@ func ExtractTime(str string, ifEmptyFillAsNow bool) (hour, min, sec int, err err
 			}
 		}
 
-		hour, min, sec = int(hour64), 30, 0
+		hour, min, sec, daysChanged = int(hour64), 30, 0, 0
 	} else if timeExactRe2.Match(bytes) {
 		slices := timeExactRe2.FindStringSubmatch(str)
 
@@ -319,12 +322,12 @@ func ExtractTime(str string, ifEmptyFillAsNow bool) (hour, min, sec int, err err
 			}
 		}
 
-		hour, min, sec = int(hour64), int(minute64), int(second64)
+		hour, min, sec, daysChanged = int(hour64), int(minute64), int(second64), 0
 	} else {
-		return 0, 0, 0, fmt.Errorf("해당하는 시간 패턴이 없습니다: %s", str)
+		return 0, 0, 0, 0, fmt.Errorf("해당하는 시간 패턴이 없습니다: %s", str)
 	}
 
-	return hour, min, sec, nil
+	return hour, min, sec, daysChanged, nil
 }
 
 // 주어진 연/월/일이 0  이하일 경우 '오늘' 날짜 기준으로 값을 채워줌

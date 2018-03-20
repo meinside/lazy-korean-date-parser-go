@@ -194,7 +194,7 @@ func ExtractDate(str string, ifEmptyFillAsToday bool) (date time.Time, err error
 		case ExpressionDay1, ExpressionDay2: // day
 			date = date.AddDate(0, 0, multiply*int(number))
 		default:
-			return date, fmt.Errorf("해당하는 날짜 표현이 없습니다: %s", str)
+			return time.Time{}, fmt.Errorf("해당하는 날짜 표현이 없습니다: %s", str)
 		}
 
 		year, month, day = date.Year(), int(date.Month()), date.Day()
@@ -217,7 +217,7 @@ func ExtractDate(str string, ifEmptyFillAsToday bool) (date time.Time, err error
 		case ExpressionTwoDaysAfterTomorrow1: // 3 days after
 			date = date.AddDate(0, 0, 3)
 		default:
-			return date, fmt.Errorf("해당하는 날짜 표현이 없습니다: %s", str)
+			return time.Time{}, fmt.Errorf("해당하는 날짜 표현이 없습니다: %s", str)
 		}
 
 		year, month, day = date.Year(), int(date.Month()), date.Day()
@@ -236,7 +236,7 @@ func ExtractDate(str string, ifEmptyFillAsToday bool) (date time.Time, err error
 		day64, _ := strconv.ParseInt(slices[5], 10, 16)
 		year, month, day = int(year64), int(month64), int(day64)
 	} else {
-		return date, fmt.Errorf("해당하는 날짜 패턴이 없습니다: %s", str)
+		return time.Time{}, fmt.Errorf("해당하는 날짜 패턴이 없습니다: %s", str)
 	}
 
 	if ifEmptyFillAsToday {

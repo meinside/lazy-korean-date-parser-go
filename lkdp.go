@@ -1,5 +1,7 @@
 package lkdp
 
+// Lazy Korean Date(+Time) Parser
+
 import (
 	"fmt"
 	"regexp"
@@ -8,10 +10,12 @@ import (
 	"time"
 )
 
+// constants
 const (
 	DefaultLocation = "Asia/Seoul"
 )
 
+// constant strings
 const (
 	ExpressionTheDayBeforeYesterday1 = `그저께`
 	ExpressionTheDayBeforeYesterday2 = `그제`
@@ -155,17 +159,20 @@ func init() {
 	))
 }
 
+// SetLocation sets location
 // 지역 설정 (timezone)
 //
 // https://golang.org/pkg/time/#Location
 func SetLocation(str string) error {
-	var err error = nil
+	var err error
 
 	_location, err = time.LoadLocation(str)
 
 	return err
 }
 
+// ExtractDate extracts date from given string
+//
 // 주어진 한글 string으로부터 가장 먼저 패턴에 맞는 날짜값 추출
 func ExtractDate(str string, ifEmptyFillAsToday bool) (date time.Time, err error) {
 	var year, month, day int = 0, 0, 0
@@ -179,7 +186,7 @@ func ExtractDate(str string, ifEmptyFillAsToday bool) (date time.Time, err error
 
 		number, _ := strconv.ParseInt(slices[1], 10, 16)
 
-		var multiply int = 1
+		multiply := 1
 		switch slices[3] {
 		case ExpressionBefore1: // before
 			multiply = -1
@@ -249,6 +256,8 @@ func ExtractDate(str string, ifEmptyFillAsToday bool) (date time.Time, err error
 	return date, nil
 }
 
+// ExtractTime extracts time from given string
+//
 // 주어진 한글 string으로부터 시간 추출
 func ExtractTime(str string, ifEmptyFillAsNow bool) (hour, min, sec, daysChanged int, err error) {
 	bytes := []byte(str)
@@ -259,11 +268,11 @@ func ExtractTime(str string, ifEmptyFillAsNow bool) (hour, min, sec, daysChanged
 
 		now := time.Now() // now
 
-		var number int64 = 0
+		var number int64
 		if number, parseError = strconv.ParseInt(slices[1], 10, 16); parseError != nil {
 			return 0, 0, 0, 0, fmt.Errorf("해당하는 시간 패턴이 없습니다: %s", str)
 		}
-		var multiply int = 1
+		multiply := 1
 		switch slices[3] {
 		case ExpressionBefore1: // before
 			multiply = -1
@@ -286,7 +295,7 @@ func ExtractTime(str string, ifEmptyFillAsNow bool) (hour, min, sec, daysChanged
 	} else if timeExactRe1.Match(bytes) {
 		slices := timeExactRe1.FindStringSubmatch(str)
 
-		var hour64 int64 = 0
+		var hour64 int64
 		now := time.Now()
 		if hour64, parseError = strconv.ParseInt(slices[3], 10, 16); parseError != nil && ifEmptyFillAsNow {
 			hour64 = int64(now.Hour())

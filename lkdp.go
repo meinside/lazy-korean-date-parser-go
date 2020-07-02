@@ -37,10 +37,10 @@ const (
 	ExpressionDay1   = `일`
 	ExpressionDay2   = `日`
 
-	ExpressionPeriodAm1 = `오전`
-	ExpressionPeriodAm2 = `AM`
-	ExpressionPeriodPm1 = `오후`
-	ExpressionPeriodPm2 = `PM`
+	ExpressionPeriodAM1 = `오전`
+	ExpressionPeriodAM2 = `AM`
+	ExpressionPeriodPM1 = `오후`
+	ExpressionPeriodPM2 = `PM`
 
 	ExpressionHour1   = `시`
 	ExpressionHour2   = `時`
@@ -75,6 +75,8 @@ type Hms struct {
 	Minutes        int
 	Seconds        int
 	NumDaysChanged int
+
+	Ambiguous bool // whether this time is ambiguous or not (eg: AM/PM)
 }
 
 var _location *time.Location
@@ -153,10 +155,10 @@ func init() {
 	))
 	timeExactRe1 = regexp.MustCompile(fmt.Sprintf(`(?i)(%s)?\s*((\d{1,2})\s*[%s])\s*%s`,
 		strings.Join([]string{
-			ExpressionPeriodAm1,
-			ExpressionPeriodAm2,
-			ExpressionPeriodPm1,
-			ExpressionPeriodPm2,
+			ExpressionPeriodAM1,
+			ExpressionPeriodAM2,
+			ExpressionPeriodPM1,
+			ExpressionPeriodPM2,
 		}, "|"),
 		strings.Join([]string{
 			ExpressionHour1,
@@ -167,10 +169,10 @@ func init() {
 	))
 	timeExactRe2 = regexp.MustCompile(fmt.Sprintf(`(?i)(%s)?\s*((\d{1,2})\s*[%s])\s*((\d{1,2})(\s*[%s]?(\d{1,2})\s*[%s]?)?)?`,
 		strings.Join([]string{
-			ExpressionPeriodAm1,
-			ExpressionPeriodAm2,
-			ExpressionPeriodPm1,
-			ExpressionPeriodPm2,
+			ExpressionPeriodAM1,
+			ExpressionPeriodAM2,
+			ExpressionPeriodPM1,
+			ExpressionPeriodPM2,
 		}, "|"),
 		strings.Join([]string{
 			ExpressionHour1,
@@ -416,6 +418,7 @@ func ExtractTimes(str string, ifEmptyFillAsNow bool) (hmss map[string]Hms, err e
 
 	var matches []string
 
+	// relative time
 	matches = timeRelRe1.FindAllString(str, -1)
 	if matches != nil {
 		for _, match := range matches {
@@ -458,10 +461,11 @@ func ExtractTimes(str string, ifEmptyFillAsNow bool) (hmss map[string]Hms, err e
 			debugPrint("timeRelRe1: extracted hms = %02d:%02d:%02d", when.Hour(), when.Minute(), when.Second())
 
 			// append extracted time
-			hmss[match] = Hms{Hours: when.Hour(), Minutes: when.Minute(), Seconds: when.Second(), NumDaysChanged: when.Day() - now.Day()}
+			hmss[match] = Hms{Hours: when.Hour(), Minutes: when.Minute(), Seconds: when.Second(), NumDaysChanged: when.Day() - now.Day(), Ambiguous: false}
 		}
 	}
 
+	// exact time (pattern 1)
 	matches = timeExactRe1.FindAllString(str, -1)
 	if matches != nil {
 		for _, match := range matches {
@@ -482,20 +486,26 @@ func ExtractTimes(str string, ifEmptyFillAsNow bool) (hmss map[string]Hms, err e
 				hour64 = int64(now.Hour())
 			}
 
+			ambiguous := false
 			ampm := slices[1]
-			if strings.EqualFold(ampm, ExpressionPeriodPm1) || strings.EqualFold(ampm, ExpressionPeriodPm2) {
+			if strings.EqualFold(ampm, ExpressionPeriodPM1) || strings.EqualFold(ampm, ExpressionPeriodPM2) {
 				if hour64 <= 12 {
 					hour64 += 12
+				}
+			} else if !strings.EqualFold(ampm, ExpressionPeriodAM1) && !strings.EqualFold(ampm, ExpressionPeriodAM2) {
+				if hour64 < 12 {
+					ambiguous = true
 				}
 			}
 
 			debugPrint("timeExactRe1: extracted hms = %02d:%02d:%02d", hour64, 30, 0)
 
 			// append extracted time
-			hmss[match] = Hms{Hours: int(hour64), Minutes: 30, Seconds: 0, NumDaysChanged: 0}
+			hmss[match] = Hms{Hours: int(hour64), Minutes: 30, Seconds: 0, NumDaysChanged: 0, Ambiguous: ambiguous}
 		}
 	}
 
+	// exact time (pattern 2)
 	matches = timeExactRe2.FindAllString(str, -1)
 	if matches != nil {
 		for _, match := range matches {
@@ -522,17 +532,22 @@ func ExtractTimes(str string, ifEmptyFillAsNow bool) (hmss map[string]Hms, err e
 				second64 = int64(now.Second())
 			}
 
+			ambiguous := false
 			ampm := slices[1]
-			if strings.EqualFold(ampm, ExpressionPeriodPm1) || strings.EqualFold(ampm, ExpressionPeriodPm2) {
+			if strings.EqualFold(ampm, ExpressionPeriodPM1) || strings.EqualFold(ampm, ExpressionPeriodPM2) {
 				if hour64 <= 12 {
 					hour64 += 12
+				}
+			} else if !strings.EqualFold(ampm, ExpressionPeriodAM1) && !strings.EqualFold(ampm, ExpressionPeriodAM2) {
+				if hour64 < 12 {
+					ambiguous = true
 				}
 			}
 
 			debugPrint("timeExactRe2: extracted hms = %02d:%02d:%02d", hour64, minute64, second64)
 
 			// append extracted time
-			hmss[match] = Hms{Hours: int(hour64), Minutes: int(minute64), Seconds: int(second64), NumDaysChanged: 0}
+			hmss[match] = Hms{Hours: int(hour64), Minutes: int(minute64), Seconds: int(second64), NumDaysChanged: 0, Ambiguous: ambiguous}
 		}
 	}
 
@@ -545,7 +560,7 @@ func ExtractTimes(str string, ifEmptyFillAsNow bool) (hmss map[string]Hms, err e
 
 // ExtractTime extracts time from given string
 //
-// 주어진 한글 string으로부터 패턴에 가장 먼저 맞는 시간값 추출
+// 주어진 한글 string으로부터 패턴에 가장 '먼저' 맞는 시간값 추출
 func ExtractTime(str string, ifEmptyFillAsNow bool) (hms Hms, err error) {
 	var times map[string]Hms
 	times, err = ExtractTimes(str, ifEmptyFillAsNow)

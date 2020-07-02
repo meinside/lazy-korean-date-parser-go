@@ -58,6 +58,39 @@ func TestExtractTime(t *testing.T) {
 			t.Errorf("ExtractTime failed with string: '%s' (error: %s)", str, err)
 		}
 	}
+
+	// ambiguous times
+	for str, b := range map[string]bool{
+		`0시 반`:    false,
+		`11시 30분`: false,
+	} {
+		if hms, err := ExtractTime(str, b); err == nil && hms.Ambiguous {
+			if hms.Ambiguous {
+				t.Logf("ExtractTime extracted time: %02d:%02d:%02d (ambiguous: %t) from string: '%s'", hms.Hours, hms.Minutes, hms.Seconds, hms.Ambiguous, str)
+			} else {
+				t.Errorf("ExtractTime failed with string: '%s' (ambiguous: %t)", str, hms.Ambiguous)
+			}
+		} else {
+			t.Errorf("ExtractTime failed with string: '%s' (error: %s)", str, err)
+		}
+	}
+
+	// non-ambiguous times
+	for str, b := range map[string]bool{
+		`오전 8시`:   false,
+		`오후 8시 반`: false,
+		`20시 30분`: false,
+	} {
+		if hms, err := ExtractTime(str, b); err == nil {
+			if !hms.Ambiguous {
+				t.Logf("ExtractTime extracted time: %02d:%02d:%02d (ambiguous: %t) from string: '%s'", hms.Hours, hms.Minutes, hms.Seconds, hms.Ambiguous, str)
+			} else {
+				t.Errorf("ExtractTime failed with string: '%s' (ambiguous: %t)", str, hms.Ambiguous)
+			}
+		} else {
+			t.Errorf("ExtractTime failed with string: '%s' (error: %s)", str, err)
+		}
+	}
 }
 
 func TestExtractTimes(t *testing.T) {

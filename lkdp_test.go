@@ -19,6 +19,7 @@ func TestExtractDate(t *testing.T) {
 		`1년 후 2020 원더키디 등장`:      false,
 		`12월 12일부터 다음 해 6월 2일까지`: true,
 		`6월 2일부터 다시 12월 12일까지`:   true,
+		`내년 오늘 선택약정 재가입할 것`:      true,
 	} {
 		if d, err := ExtractDate(str, b); err == nil {
 			t.Logf("ExtractDate extracted date: %s from string: '%s'", d.Format("2006-01-02"), str)

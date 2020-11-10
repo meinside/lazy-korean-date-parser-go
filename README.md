@@ -23,6 +23,8 @@ import (
 ### 사용 예:
 
 ```go
+// sample.go
+
 package main
 
 import (
@@ -32,14 +34,14 @@ import (
 )
 
 func main() {
-	// param2 = false일 경우, year 등 빈 값은 0으로 설정
+	// `ifEmptyFillAsToday` = false일 경우, year 등 빈 값은 0으로 설정
 	if date, err := lkdp.ExtractDate("5월 18일 광주민주화항쟁", false); err != nil {
 		fmt.Printf("Error: %s\n", err)
 	} else {
 		fmt.Printf("Extracted date: %v\n", date)
 	}
 
-	// param2 = true인 경우는 현재 시간 기준으로 값을 채워 넣음
+	// `ifEmptyFillAsToday` = true인 경우는 현재 시간 기준으로 빈 값을 채워 넣음
 	if date, err := lkdp.ExtractDate("5월 18일 광주민주화항쟁 행사 진행 예정", true); err != nil {
 		fmt.Printf("Error: %s\n", err)
 	} else {
@@ -50,6 +52,13 @@ func main() {
 		fmt.Printf("Error: %s\n", err)
 	} else {
 		fmt.Printf("Extracted date: %v\n", date)
+	}
+
+	// '내년', '작년' 등의 keyword의 경우, 기준 시간에 해당 연도만큼 +/- 처리
+	if dates, err := lkdp.ExtractDates("작년에 왔던 각설이 내년에도 오겠네", true); err != nil {
+		fmt.Printf("Error: %s\n", err)
+	} else {
+		fmt.Printf("Extracted dates: %s\n", dates)
 	}
 
 	// '내일', '모레' 등의 keyword의 경우, 기준 시간에 해당 일자만큼 +/- 처리
@@ -76,27 +85,26 @@ func main() {
 		fmt.Printf("Extracted time: %02d:%02d:%02d\n", hms.Hours, hms.Minutes, hms.Seconds)
 	}
 
-	// param2 = false인 경우 빈 값은 0으로 설정
+	// `ifEmptyFillAsNow` = false인 경우 빈 값은 0으로 설정
 	if hms, err := lkdp.ExtractTime("수업은 오후 1시 30분에 시작합니다", false); err != nil {
 		fmt.Printf("Error: %s\n", err)
 	} else {
 		fmt.Printf("Extracted time: %02d:%02d:%02d\n", hms.Hours, hms.Minutes, hms.Seconds)
 	}
-
 	if hms, err := lkdp.ExtractTime("12시에 볼까?", false); err != nil {
 		fmt.Printf("Error: %s\n", err)
 	} else {
 		fmt.Printf("Extracted time: %02d:%02d:%02d\n", hms.Hours, hms.Minutes, hms.Seconds)
 	}
 
-	// param2 = true인 경우 빈 값은 현재 시간값으로 채워넣음
+	// `ifEmptyFillAsNow` = true인 경우 빈 값은 현재 시간값으로 채워넣음
+	//
 	// AM/PM 또는 오전/오후 구분 (오후일 경우 12시간 +)
 	if hms, err := lkdp.ExtractTime("지진 발생 시각 PM 07:12 경", true); err != nil {
 		fmt.Printf("Error: %s\n", err)
 	} else {
 		fmt.Printf("Extracted time: %02d:%02d:%02d\n", hms.Hours, hms.Minutes, hms.Seconds)
 	}
-
 	if hms, err := lkdp.ExtractTime("현재 시각: 18:09:35.211 KST", false); err != nil {
 		fmt.Printf("Error: %s\n", err)
 	} else {
@@ -110,7 +118,7 @@ func main() {
 		fmt.Printf("Extracted time: %02d:%02d:%02d\n", hms.Hours, hms.Minutes, hms.Seconds)
 	}
 
-	// 시간이 +/- 됨에따라 날짜까지 변경되는 경우, 4번째 return parameter를 통해 몇 일이나 변경되었는지 확인 가능
+	// 시간이 +/- 됨에따라 날짜까지 변경되는 경우, NumDaysChanged를 통해 몇 일이나 변경되었는지 확인 가능
 	if hms, err := lkdp.ExtractTime("30시간 후에는 하루는 더 지나 있을 것이다", true); err != nil {
 		fmt.Printf("Error: %s\n", err)
 	} else {
@@ -123,18 +131,19 @@ func main() {
 
 ```
 Extracted date: 0000-05-18 00:00:00 +0827 LMT
-Extracted date: 2019-05-18 00:00:00 +0900 KST
-Extracted date: 1950-06-25 00:00:00 +0900 KST
-Extracted date: 2019-03-27 00:00:00 +0900 KST
-Extracted time: 20:23:03
-Extracted time: 19:18:03
-Extracted time: 19:23:33
+Extracted date: 2020-05-18 00:00:00 +0900 KST
+Extracted date: 1950-06-25 00:00:00 +1000 KDT
+Extracted dates: map[내년:2021-11-10 00:00:00 +0900 KST 작년:2019-11-10 00:00:00 +0900 KST]
+Extracted date: 2020-11-12 00:00:00 +0900 KST
+Extracted time: 15:02:49
+Extracted time: 13:57:49
+Extracted time: 14:03:19
 Extracted time: 13:30:00
 Extracted time: 12:00:00
-Extracted time: 19:12:03
+Extracted time: 19:12:49
 Extracted time: 18:09:35
 Extracted time: 09:30:00
-Extracted time: 01:23:03, number of days changed: 2
+Extracted time: 20:02:49, number of days changed: 1
 ```
 
 ## TODO

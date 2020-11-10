@@ -18,6 +18,10 @@ const (
 
 // constant strings
 const (
+	ExpressionYearNext               = `내년`
+	ExpressionYearAfterNext          = `내후년`
+	ExpressionYearBefore             = `작년`
+	ExpressionYearBeforeLast         = `제작년`
 	ExpressionTheDayBeforeYesterday1 = `그저께`
 	ExpressionTheDayBeforeYesterday2 = `그제`
 	ExpressionYesterday1             = `어제`
@@ -131,6 +135,10 @@ func init() {
 		ExpressionAfter2,
 	}, "|")))
 	dateRelRe2 = regexp.MustCompile(fmt.Sprintf(`(%s)`, strings.Join([]string{
+		ExpressionYearNext,
+		ExpressionYearAfterNext,
+		ExpressionYearBefore,
+		ExpressionYearBeforeLast,
 		ExpressionTheDayBeforeYesterday1,
 		ExpressionTheDayBeforeYesterday2,
 		ExpressionYesterday1,
@@ -284,6 +292,14 @@ func ExtractDates(str string, ifEmptyFillAsToday bool) (dates map[string]time.Ti
 			date := time.Now() // today
 
 			switch match {
+			case ExpressionYearBefore: // 1 year before
+				date = date.AddDate(-1, 0, 0)
+			case ExpressionYearBeforeLast: // 2 years before
+				date = date.AddDate(-2, 0, 0)
+			case ExpressionYearNext: // 1 year after
+				date = date.AddDate(1, 0, 0)
+			case ExpressionYearAfterNext: // 2 years after
+				date = date.AddDate(2, 0, 0)
 			case ExpressionTheDayBeforeYesterday1, ExpressionTheDayBeforeYesterday2: // 2 days before
 				date = date.AddDate(0, 0, -2)
 			case ExpressionYesterday1, ExpressionYesterday2: // 1 day before
